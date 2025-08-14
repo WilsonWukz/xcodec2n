@@ -1,0 +1,21 @@
+dataset:
+  _target_: data_module.FSDataset_add_STFT
+  num_workers: 4
+
+train:
+  filelist: /mnt/e/dataset/manifests/librispeech_train_clean_100.txt
+  batch_size: 1
+  shuffle: true
+
+val:
+  filelist: /mnt/e/dataset/manifests/librispeech_test-clean.txt
+  batch_size:  1
+  shuffle: false
+
+test:
+  filelist: /mnt/e/dataset/manifests/librispeech_test-clean.txt
+  batch_size: 1
+  shuffle: false
+padding_idx: 0
+frame_length: 200
+min_audio_length: 96000

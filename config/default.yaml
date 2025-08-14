@@ -1,0 +1,20 @@
+defaults:
+  - preprocess: default
+  - dataset: default
+  - model: default
+  - train: default
+log_dir: ./logs
+debug: false
+ckpt: null # infer
+input_dir: null # infer
+output_dir: null # infer
+model:
+  proj_dim: 256
+train:
+  contrastive_temp: 0.07
+  lambdas:
+    lambda_contrast: 1.0
+hydra:
+  output_subdir: hydra
+  job:
+    chdir: True

@@ -1,0 +1,32 @@
+# 忽略模型文件
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+
+# 忽略缓存
+__pycache__/
+*.log
+*.tmp
+*.zip
+*.tar.gz
+
+# HuggingFace 缓存
+huggingface/
+
+# Python / virtualenv
+.venv/
+__pycache__/
+*.pyc
+
+# Outputs / logs / checkpoints
+outputs/
+*.ckpt
+*.pt
+*.pth
+*.bin
+
+# System / IDE
+.DS_Store
+.vscode/
