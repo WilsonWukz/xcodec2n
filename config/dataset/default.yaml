@@ -1,0 +1,28 @@
+min_audio_length: 96000
+dataset:
+  _target_: data_module.FSDataset_add_STFT
+  num_workers: 4
+  frame_length: 200        # 已指定，保持不变
+  padding_idx: 0           # 已指定，保持不变
+
+preprocess:
+  audio:
+    sr: 16000              # 采样率，与代码中的 16000 一致
+  datasets:
+    LibriSpeech:
+      root: /workspace/xcodec2n/LibriSpeech  # LibriSpeech 数据集根目录
+
+train:
+  filelist: /workspace/xcodec2n/filelists/0.1_train_filelist.json
+  batch_size: 1
+  shuffle: true
+
+val:
+  filelist: /workspace/xcodec2n/filelists/val_filelist.json
+  batch_size: 1
+  shuffle: false
+
+test:
+  filelist: /workspace/xcodec2n/filelists/test_filelist.json
+  batch_size: 1
+  shuffle: false

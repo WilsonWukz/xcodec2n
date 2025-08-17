@@ -1,0 +1,28 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Conda environment
+env/
+.venv/
+*.conda
+*.env
+
+# Data and models
+LibriSpeech/
+*.tar.gz
+models/
+wavlm_large.pt
+outputs/
+
+# Checkpoints
+*.ckpt
+
+# Logs
+*.log
+bad_files.txt
+
+# Other system files
+.DS_Store

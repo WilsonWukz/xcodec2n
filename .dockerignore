@@ -1,0 +1,8 @@
+outputs/
+data/
+models/
+*.ckpt
+*.pth
+*.tar
+.venv/
+.git/

@@ -1,0 +1,64 @@
+# config/train/default.yaml
+trainer:
+  accelerator: gpu
+  devices: 1
+  max_epochs: 100
+  precision: 16
+  accumulate_grad_batches: 1
+  # gradient_clip_val: 1.0
+  log_every_n_steps: 50
+  check_val_every_n_epoch: 1
+
+# Loss switches
+use_mel_loss: true
+use_stft_loss: false
+use_feat_match_loss: true
+
+# STFT loss params
+stft_loss_params:
+  fft_sizes: [1024, 2048, 512]
+  hop_sizes: [120, 240, 50]
+  win_lengths: [600, 1200, 240]
+
+# 优化器参数（generator / discriminator）
+gen_optim_params:
+  lr: 1e-4
+  betas: [0.9, 0.95]
+  weight_decay: 0.0
+  eps: 1e-8
+
+disc_optim_params:
+  lr: 1e-4
+  betas: [0.9, 0.95]
+  weight_decay: 0.0
+  eps: 1e-8
+
+# scheduler params for your WarmupLR
+gen_schedule_params:
+  warmup_step: 1000     # 必须 > 0
+  down_step: 200000
+  max_lr: 1e-4
+  min_lr: 1e-6
+
+disc_schedule_params:
+  warmup_step: 1000
+  down_step: 200000
+  max_lr: 1e-4
+  min_lr: 1e-6
+
+# loss weights (确保包含代码中引用的所有 key)
+lambdas:
+  lambda_mel_loss: 45.0
+  lambda_adv: 2.0
+  lambda_feat_match_loss: 2.0
+  lambda_semantic_loss: 1.0
+  lambda_perceptual_loss: 0.0
+  lambda_disc: 1.0
+  lambda_contrast: 1.0
+
+# grad clip values used in training_step logging/clip
+gen_grad_clip: 1.0
+disc_grad_clip: 1.0
+
+# debug flag (已在 default.yaml 顶层使用过)
+# debug: false
