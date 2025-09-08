@@ -11,16 +11,22 @@ output_dir: null # infer
 model:
   proj_dim: 256
 train:
-  contrastive_temp: 0.07
-  batch_size: 1
-  filelist: /workspace/xcodec2n/filelists/0.1_train_filelist.json
-  shuffle: true
-  lambdas:
-    lambda_contrast: 1.0
+    batch_size: 3
+    accumulate_grad_batches: 4
+    gen_grad_clip: 1.0
+    disc_grad_clip: 1.0
+    gradient_clip_algorithm: norm
+    contrastive_temp: 0.07
+    filelist: /workspace/xcodec2n/filelists/0.1_train_filelist.json
+    shuffle: true
+    lambdas:
+        lambda_contrast: 20.0
+
 val:
   batch_size: 1
   filelist: /workspace/xcodec2n/filelists/val_filelist.json
   shuffle: true
+
 hydra:
   output_subdir: hydra
   job:

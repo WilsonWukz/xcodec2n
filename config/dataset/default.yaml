@@ -14,7 +14,7 @@ preprocess:
 
 train:
   filelist: /workspace/xcodec2n/filelists/0.1_train_filelist.json
-  batch_size: 1
+  batch_size: 2
   shuffle: true
 
 val:

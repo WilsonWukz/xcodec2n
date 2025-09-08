@@ -68,12 +68,6 @@ huggingface-cli login
 huggingface-cli upload wilsonngfs/xcodec2n /workspace/xcodec2n/outputs/checkpoints/last.ckpt
 huggingface-cli upload wilsonngfs/xcodec2n /workspace/xcodec2n/outputs/checkpoints_o/last.ckpt
 
-# huggingface model download
-cd /workspace/xcodec2n/outputs/checkpoints/
-wget -c "https://huggingface.co/wilsonngfs/xcodec2n/resolve/main/seed=1024{n, 10, 3, 4, f, 20, 10}.ckpt" -O "seed=1024{n, 10, 3, 4, f, 20, 10}.ckpt"
-
-
-
 import hydra
 from hydra import initialize, compose
 from data_module import DataModule

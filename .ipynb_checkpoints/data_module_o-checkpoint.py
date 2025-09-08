@@ -1,4 +1,5 @@
 import os
+import json
 import re
 import torch
 import torch.nn as nn
@@ -12,10 +13,11 @@ from os.path import basename, exists, join
 from torch.utils.data import Dataset, DataLoader
 import hydra
 import utils
+import torchaudio
 from transformers import AutoFeatureExtractor
 from torchaudio.transforms import Resample
 from tqdm import tqdm
-import json
+from torchaudio.transforms import Resample
 
 # ---------- 辅助：将 Windows 路径规范化为 Unix/WSL 路径 ----------
 def _normalize_path_to_unix(p: str) -> str:
@@ -44,34 +46,28 @@ def _normalize_path_to_unix(p: str) -> str:
     if '\\' in p:
         return p.replace('\\', '/')
     return p
-
+    
 class DataModule(pl.LightningDataModule):
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
-        try:
-            ocwd = hydra.utils.get_original_cwd()
-        except Exception:
-            ocwd = os.getcwd()
+        
+        ocwd = hydra.utils.get_original_cwd()
         self.ocwd = ocwd
 
-        if hasattr(cfg, "train") and hasattr(cfg.train, "batch_size"):
-            self.batch_size = cfg.train.batch_size
-        else:
-            self.batch_size = 2  # fallback 默认值
-
     def get_loader(self, phase):
-        phase_cfg = self.cfg.get(phase)  # 修改为顶级键
+        phase_cfg = self.cfg.dataset.get(phase)
         batch_size = phase_cfg.batch_size
-        num_workers = min(os.cpu_count() // 2, 8)
-        ds = FSDataset_add_STFT(phase, self.cfg)  # 使用 FSDataset_add_STFT
-        dl = DataLoader(ds,
+        ds = FSDataset(phase, self.cfg)
+        # ds = FSDataset_add_STFT(phase, self.cfg)
+        dl = DataLoader(ds, 
                         batch_size=batch_size,
                         shuffle=phase_cfg.shuffle,
-                        num_workers=num_workers,
+                        num_workers=min(os.cpu_count() // 2, 8),
                         collate_fn=ds.collate_fn,
                         pin_memory=True,
                         persistent_workers=True)
+
         return dl
 
     def train_dataloader(self):
@@ -81,28 +77,40 @@ class DataModule(pl.LightningDataModule):
         return self.get_loader('val')
 
     def test_dataloader(self):
-        return self.get_loader('test')
+        pass
 
-class FSDataset_add_STFT(Dataset):
-    """Dataset batching wav, mel and other acoustic features with STFT"""
+class FSDataset(Dataset):
+    """Dataset batching wav, mel 
+    and other acoustic features
+
+    Args:
+        phase: train, val, test
+        cfg: hydra config
+    """
     def __init__(self, phase, cfg):
         self.phase = phase
         self.cfg = cfg
-        self.phase_cfg = cfg.get(phase)  # 使用顶级键
-        try:
-            self.ocwd = hydra.utils.get_original_cwd()
-        except Exception:
-            self.ocwd = os.getcwd()
-
+        self.phase_cfg = cfg.dataset.get(phase)
+        self.ocwd = hydra.utils.get_original_cwd()
+        
         self.sr = cfg.preprocess.audio.sr
+        
+        # self.filelist = utils.read_filelist(join(self.ocwd, self.phase_cfg.filelist))
         self.filelist = self.get_filelist(self.phase_cfg.filelist)
         self.min_audio_length = cfg.dataset.min_audio_length
-        # self.feature_extractor = AutoFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
-        self.feature_extractor = AutoFeatureExtractor.from_pretrained(
-            "facebook/w2v-bert-2.0",
-            cache_dir="/workspace/xcodec2n/models/huggingface"
-        )
+        self.feature_extractor = AutoFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
+    def __len__(self):
+        return len(self.filelist)
 
+    def load_wav(self, path):
+        wav, sr = librosa.load(path, sr=self.sr)
+        return wav
+
+    # def get_filelist(self, fpath):
+    #     with open(fpath, 'r') as f:
+    #         # flist = [l.strip() for l in f if l.strip()]
+    #         flist = [l.strip().split('\t')[0] for l in f if l.strip()]
+    #     return flist
     def get_filelist(self, fpath):
         """Read JSON manifest and extract audio paths."""
         flist = []
@@ -112,80 +120,79 @@ class FSDataset_add_STFT(Dataset):
                 if not line:
                     continue
                 try:
+                    # 如果是 JSON 格式
                     item = json.loads(line)
                     wav = item.get("audio_filepath", "")
                 except json.JSONDecodeError:
+                    # 如果不是 JSON，就按原逻辑走
                     wav = line.split('\t')[0]
                 wav = _normalize_path_to_unix(wav)
                 flist.append(wav)
         return flist
 
-    def __len__(self):
-        return len(self.filelist)
-
     def __getitem__(self, idx):
-        wavpath = self.filelist[idx]
-        wavpath = _normalize_path_to_unix(wavpath)
-
-        if os.path.isabs(wavpath):
-            wavpath_full = wavpath
-        else:
-            root = _normalize_path_to_unix(self.cfg.preprocess.datasets.LibriSpeech.root)
-            if root:
-                wavpath_full = os.path.join(root, wavpath)
-            else:
-                wavpath_full = wavpath
-
-        wav, sr = torchaudio.load(wavpath_full)
+        # (  wavpath,fid) = self.filelist[idx]
+        wavpath  = self.filelist[idx]
+        wavpath_full = join(self.cfg.preprocess.datasets.LibriSpeech.root, wavpath)
+        # wav = self.load_wav(wavpath)
+        # wav = torch.from_numpy(wav)
+ 
+        wav,sr=torchaudio.load(wavpath_full) 
+ 
+                 
         if sr != 16000:
             wav = Resample(sr, 16000)(wav)
-        wav = wav[0, :]
+        wav = wav[0,:]
         length = wav.shape[0]
-
+        # length = wav.shape[1]
         if length < self.min_audio_length:
             wav = F.pad(wav, (0, self.min_audio_length - length))
             length = wav.shape[0]
-
-        i = random.randint(0, length - self.min_audio_length)
-        wav = wav[i:i + self.min_audio_length]
-
-        # 添加 STFT 特征（示例）
-        stft = torch.stft(wav, n_fft=512, hop_length=256, return_complex=True)
-        stft = torch.abs(stft)
+        i = random.randint(0, length-self.min_audio_length)
+        wav = wav[i:i+self.min_audio_length]
 
         wav_pad = F.pad(wav, (160, 160))
-        feat = self.feature_extractor(wav_pad, sampling_rate=16000, return_tensors="pt").data['input_features']
-
+        feat = self.feature_extractor(wav_pad, sampling_rate=16000, return_tensors="pt") .data['input_features']
         out = {
+ 
             'wav': wav,
             'feat': feat,
-            'stft': stft
+            # 'paths': wavpath_full
         }
+        
         return out
-
+    
     def collate_fn(self, bs):
+ 
         wavs = [b['wav'] for b in bs]
         wavs = torch.stack(wavs)
         feats = [b['feat'] for b in bs]
         feats = torch.stack(feats)
-        stfts = [b['stft'] for b in bs]
-        stfts = torch.stack(stfts)
         out = {
-            'wav': wavs,
+ 
+            'wav': wavs,  
             'feats': feats,
-            'stfts': stfts
+            # 'paths': [b['paths'] for b in bs]
         }
         return out
 
-@hydra.main(config_path='config', config_name='default', version_base='1.1')
+@hydra.main(config_path='config', config_name='default', version_base=None)
 def main(cfg):
+ 
     data_module = DataModule(cfg)
-    train_loader = data_module.train_dataloader()  # 修改为 train_dataloader
+
+ 
+    train_loader = data_module.val_dataloader()
+
+ 
+    valid_filelist = []
+
+ 
     for batch_idx, batch in enumerate(tqdm(train_loader, desc="Processing batches", unit="batch")):
-        print(f"[DEBUG] Batch wav shape: {batch['wav'].shape}")
-        print(f"[DEBUG] Batch feats shape: {batch['feats'].shape}")
-        print(f"[DEBUG] Batch stfts shape: {batch['stfts'].shape}")
-        break
+ 
+        wavs = batch['wav']
+ 
 
 if __name__ == "__main__":
     main()
+

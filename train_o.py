@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.strategies import DDPStrategy,FSDPStrategy
 from torch.utils.data import DataLoader
 from data_module import DataModule
-from lightning_module import CodecLightningModule
+from lightning_module_o import CodecLightningModule
 from pytorch_lightning.loggers import WandbLogger
 from omegaconf import OmegaConf
 
@@ -30,9 +30,13 @@ torch.set_float32_matmul_precision('high')
 seed = 3025
 seed_everything(seed)
  
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning) 
+
 @hydra.main(config_path='config', config_name='default', version_base=None)
 def train(cfg):
-    checkpoint_callback = ModelCheckpoint(dirpath="/workspace/xcodec2n/outputs/checkpoints", 
+    checkpoint_callback = ModelCheckpoint(dirpath="/workspace/xcodec2n/outputs/checkpoints_o", 
                             save_top_k= 1, save_last=True,
                             every_n_train_steps=50, monitor="mel_loss")
 
@@ -63,6 +67,7 @@ def train(cfg):
         logger=wandb_logger,
         profiler="simple"  # 启用 Profiler
     )
+    
     torch.backends.cudnn.benchmark = True  
     # lightning_module.strict_loading = False
     # LightningModule.strict_loading = True
