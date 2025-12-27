@@ -5,7 +5,7 @@ outputs/
 vq_backup/
 
 # --- 模型权重 ---
-models/
+!eval_tools/
 *.pth
 *.pt
 *.bin
