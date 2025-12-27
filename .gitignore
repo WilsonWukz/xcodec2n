@@ -1,0 +1,32 @@
+# --- 数据与输出 ---
+data/
+merged_libritts/
+outputs/
+vq_backup/
+
+# --- 模型权重 ---
+models/
+*.pth
+*.pt
+*.bin
+*.ckpt
+
+# --- 日志和缓存 ---
+logs/
+wandb/
+__pycache__/
+*.pyc
+*.swp
+
+# --- 杂项 ---
+.idea/
+.vscode/
+.DS_Store
+
+# --- 忽略的具体文件 ---
+nano.py
+*.txt
+*.xlsx
+*.flac
+experiments_logs.xlsx
+EOF

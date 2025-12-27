@@ -1,0 +1,21 @@
+dataset:
+  _target_: data_module.FSDataset_add_STFT
+
+train:
+  filelist: ./data/output/train_split_8.tsv
+  batch_size: 4
+  shuffle: true
+
+val:
+  filelist: ./data/output/val_split_2.tsv
+  batch_size:  1
+  shuffle: false
+
+test:
+  filelist: ./data/output/test_clean_file_list.tsv
+  batch_size: 1
+  shuffle: false
+padding_idx: 0
+frame_length: 200
+max_audio_length: 20000
+min_audio_length: 3200
